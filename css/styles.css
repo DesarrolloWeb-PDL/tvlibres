@@ -341,7 +341,9 @@ body.no-scroll {
 .player-inner {
   position: relative;
   width: 100%;
-  max-width: 1100px;
+  /* Cap width by viewport height so the 16:9 frame always fits in
+     landscape (short) screens without getting cut off top/bottom. */
+  max-width: min(1100px, calc((100vh - 32px) * 16 / 9));
 }
 
 .player-frame {
@@ -361,9 +363,10 @@ body.no-scroll {
 }
 
 .player-close {
-  position: absolute;
-  top: -52px;
-  right: 0;
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 101;
   width: 42px;
   height: 42px;
   display: flex;
@@ -476,17 +479,6 @@ body.no-scroll {
 
   .cards {
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  }
-
-  .player-close {
-    top: auto;
-    bottom: -52px;
-    right: 50%;
-    transform: translateX(50%);
-  }
-
-  .player-close:active {
-    transform: translateX(50%) scale(0.92);
   }
 }
 
