@@ -1,5 +1,5 @@
 /**
- * TDA Live - Service worker
+ * TVLIBRES - Service worker
  * Cache-first app shell for offline use. No trackers, no analytics.
  */
 

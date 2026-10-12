@@ -1,5 +1,5 @@
 /**
- * TDA Live - Application logic (vanilla JS, no build step).
+ * TVLIBRES - Application logic (vanilla JS, no build step).
  * Reads the global CHANNELS array declared in js/channels.js.
  */
 (function () {

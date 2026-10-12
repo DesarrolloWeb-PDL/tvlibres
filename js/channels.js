@@ -1,5 +1,5 @@
 /**
- * TDA Live - Channel catalog
+ * TVLIBRES - Channel catalog
  * All sources are official/legal free-to-air + TDT + Brazilian channels.
  *
  * IMPORTANT: YouTube videoIds for 24/7 live streams can change when the
