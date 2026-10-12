@@ -469,6 +469,8 @@ body.no-scroll {
   }
 
   .search {
+    flex: none;
+    width: 100%;
     max-width: none;
   }
 
