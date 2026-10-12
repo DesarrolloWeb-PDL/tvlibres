@@ -234,6 +234,7 @@
   var heroLogoWrap = document.getElementById('hero-logo-wrap');
   var heroLogo = document.getElementById('hero-logo');
   var svg = document.getElementById('hero-logo-svg');
+  var watermark = document.getElementById('watermark');
   var cubeEls = CUBES.map(function (_, i) {
     return document.getElementById('cube' + i);
   });
@@ -263,6 +264,9 @@
     heroLogo.style.transform = 'scale(' + (1 - progress * 0.6) + ')';
     heroLogo.style.opacity = 1 - progress * 0.85;
     heroLogo.style.filter = 'blur(' + progress * 12 + 'px)';
+    // Very subtle watermark: fades in gently after the logo starts leaving.
+    watermark.style.opacity =
+      progress > 0.15 ? Math.min(0.06, (progress - 0.15) * 0.12) : 0;
   }
 
   svg.addEventListener('mousemove', function (e) {

@@ -23,7 +23,7 @@ html.dark {
   --accent-hover: #ff7b1a;
   --muted: #a1a1aa;
   --border: #262626;
-  --card: #141414;
+  --card: #1c1c1c;
 }
 
 * {
@@ -163,6 +163,18 @@ body.no-scroll {
   width: 180px;
   cursor: pointer;
   will-change: transform, opacity, filter;
+}
+
+/* ── Watermark (very subtle, fades in on scroll) ─────────────── */
+.watermark {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  background: url(../icons/icon.svg) no-repeat center;
+  background-size: min(42vw, 340px);
+  transition: opacity 0.4s ease;
 }
 
 /* ── Search ──────────────────────────────────────────────────── */
