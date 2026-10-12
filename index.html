@@ -74,6 +74,36 @@
     </header>
 
     <main class="app-main">
+      <!-- Mis Canales: user-added favorites (cards rendered by app.js, stored in localStorage) -->
+      <section class="group" aria-labelledby="custom-title">
+        <h2 id="custom-title" class="group-title group-title--custom">Tus favoritos</h2>
+
+        <form id="custom-form" class="custom-form" autocomplete="off" novalidate>
+          <input
+            id="custom-name"
+            class="custom-input"
+            type="text"
+            placeholder="Nombre del canal"
+            aria-label="Nombre del canal"
+            maxlength="80"
+          />
+          <input
+            id="custom-url"
+            class="custom-input"
+            type="text"
+            inputmode="url"
+            placeholder="URL del stream"
+            aria-label="URL del stream"
+            maxlength="500"
+          />
+          <button id="custom-add" class="custom-add" type="submit">Agregar</button>
+        </form>
+
+        <p id="custom-error" class="custom-error hidden" role="alert"></p>
+
+        <div id="custom-cards" class="cards"></div>
+      </section>
+
       <div id="grid"></div>
     </main>
 

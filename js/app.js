@@ -11,6 +11,11 @@
   var playerFrame = document.getElementById('player-frame');
   var closePlayerBtn = document.getElementById('close-player');
   var installBtn = document.getElementById('install-btn');
+  var customForm = document.getElementById('custom-form');
+  var customNameInput = document.getElementById('custom-name');
+  var customUrlInput = document.getElementById('custom-url');
+  var customError = document.getElementById('custom-error');
+  var customCards = document.getElementById('custom-cards');
 
   // ── Render ─────────────────────────────────────────────────────────
   function getGroups(list) {
@@ -26,8 +31,12 @@
   }
 
   function render(filter) {
-    grid.innerHTML = '';
     var query = (filter || '').trim().toLowerCase();
+
+    // "Mis Canales" lives in its own container above #grid; filter it too.
+    renderCustomCards(query);
+
+    grid.innerHTML = '';
     var list = CHANNELS.filter(function (ch) {
       return !query || ch.name.toLowerCase().indexOf(query) !== -1;
     });
@@ -141,6 +150,235 @@
     if (e.key === 'Escape' && !player.classList.contains('hidden')) {
       closePlayer();
     }
+  });
+
+  // ── Mis Canales (user-defined favorites, localStorage) ─────────────
+  var STORAGE_KEY = 'tvlibres-custom-channels';
+  var YT_ID_RE = /^[a-zA-Z0-9_-]{11}$/;
+  var errorTimer = null;
+
+  function storageAvailable() {
+    try {
+      var probe = '__tvlibres_probe__';
+      localStorage.setItem(probe, '1');
+      localStorage.removeItem(probe);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function loadCustom() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      var list = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(list)) return [];
+      // Tolerate corrupt entries: keep only well-formed records.
+      return list.filter(function (ch) {
+        return (
+          ch &&
+          typeof ch.id === 'string' &&
+          typeof ch.name === 'string' &&
+          typeof ch.url === 'string'
+        );
+      });
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveCustom(list) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function newId() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return (
+      Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10)
+    );
+  }
+
+  // Returns the 11-char video ID for embeddable YouTube VIDEO/live URLs,
+  // or null for everything else (channel/handle URLs, non-YouTube sites).
+  function extractYouTubeId(url) {
+    var parsed;
+    try {
+      parsed = new URL(url);
+    } catch (e) {
+      return null;
+    }
+
+    var host = parsed.hostname.replace(/^www\./, '');
+    var id = null;
+
+    if (host === 'youtu.be') {
+      id = parsed.pathname.split('/')[1] || null;
+    } else if (
+      host === 'youtube.com' ||
+      host === 'm.youtube.com' ||
+      host === 'music.youtube.com'
+    ) {
+      if (parsed.pathname === '/watch') {
+        id = parsed.searchParams.get('v');
+      } else {
+        var match = parsed.pathname.match(/^\/(?:live|embed)\/([^/?#]+)/);
+        if (match) id = match[1];
+      }
+    }
+
+    return id && YT_ID_RE.test(id) ? id : null;
+  }
+
+  var canStore = storageAvailable();
+  var customList = canStore ? loadCustom() : [];
+  if (!canStore) customForm.classList.add('hidden');
+
+  function showError(message) {
+    customError.textContent = message;
+    customError.classList.remove('hidden');
+    clearTimeout(errorTimer);
+    errorTimer = setTimeout(clearError, 4000);
+  }
+
+  function clearError() {
+    clearTimeout(errorTimer);
+    customError.textContent = '';
+    customError.classList.add('hidden');
+  }
+
+  function renderCustomCards(query) {
+    customCards.innerHTML = '';
+
+    var matches = customList.filter(function (ch) {
+      return !query || ch.name.toLowerCase().indexOf(query) !== -1;
+    });
+
+    if (matches.length === 0) {
+      // Invite line only on a blank search; while searching, stay quiet.
+      if (!query) {
+        var empty = document.createElement('p');
+        empty.className = 'empty custom-empty';
+        empty.textContent = 'Agregá tus canales preferidos.';
+        customCards.appendChild(empty);
+      }
+      return;
+    }
+
+    matches.forEach(function (ch) {
+      customCards.appendChild(buildCustomCard(ch));
+    });
+  }
+
+  function buildCustomCard(ch) {
+    // A div (not a <button>) so the nested delete <button> stays valid HTML.
+    var card = document.createElement('div');
+    card.className = 'card card-custom';
+    card.setAttribute('role', 'button');
+    card.tabIndex = 0;
+    card.setAttribute('aria-label', 'Ver ' + ch.name);
+
+    var logo = document.createElement('span');
+    logo.className = 'card-logo';
+    // No --ch set → falls back to var(--accent), marking it as custom.
+    logo.textContent = ch.name.trim().slice(0, 2).toUpperCase();
+
+    var name = document.createElement('span');
+    name.className = 'card-name';
+    name.textContent = ch.name;
+
+    var kind = document.createElement('span');
+    kind.className = 'card-kind';
+    kind.textContent = ch.videoId ? 'YouTube' : 'Personalizado';
+
+    var del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'card-delete';
+    del.textContent = '✕';
+    del.setAttribute('aria-label', 'Eliminar ' + ch.name);
+    del.addEventListener('click', function (e) {
+      e.stopPropagation();
+      removeCustom(ch.id);
+    });
+
+    card.appendChild(logo);
+    card.appendChild(name);
+    card.appendChild(kind);
+    card.appendChild(del);
+
+    card.addEventListener('click', function () {
+      if (ch.videoId) {
+        openPlayer(ch);
+      } else if (ch.url) {
+        window.open(ch.url, '_blank', 'noopener');
+      }
+    });
+
+    card.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        card.click();
+      }
+    });
+
+    return card;
+  }
+
+  function removeCustom(id) {
+    customList = customList.filter(function (ch) {
+      return ch.id !== id;
+    });
+    saveCustom(customList);
+    render(searchInput.value);
+  }
+
+  customNameInput.addEventListener('input', clearError);
+  customUrlInput.addEventListener('input', clearError);
+
+  customForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    var name = customNameInput.value.trim();
+    var url = customUrlInput.value.trim();
+
+    if (!name || !url) {
+      showError('Ingresá un nombre y una URL.');
+      return;
+    }
+
+    if (!/^https?:\/\//i.test(url)) {
+      url = 'https://' + url;
+    }
+
+    var duplicate = customList.some(function (ch) {
+      return ch.name.toLowerCase() === name.toLowerCase();
+    });
+    if (duplicate) {
+      showError('Ya existe un canal con ese nombre.');
+      return;
+    }
+
+    customList.push({
+      id: newId(),
+      name: name,
+      url: url,
+      videoId: extractYouTubeId(url),
+    });
+
+    if (!saveCustom(customList)) {
+      customList.pop();
+      showError('No se pudo guardar en este dispositivo.');
+      return;
+    }
+
+    customNameInput.value = '';
+    customUrlInput.value = '';
+    clearError();
+    render(searchInput.value);
   });
 
   // ── Search ─────────────────────────────────────────────────────────
